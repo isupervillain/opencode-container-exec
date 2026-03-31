@@ -7,10 +7,16 @@ const repoRoot = resolve(new URL('../..', import.meta.url).pathname)
 const sandbox = mkdtempSync(join(tmpdir(), 'ocex-pack-smoke-'))
 
 try {
-  const packedName = execSync('npm pack --silent', {
+  const packedRaw = execSync('npm pack --json --silent', {
     cwd: repoRoot,
     encoding: 'utf8'
   }).trim()
+
+  const packed = JSON.parse(packedRaw)
+  const packedName = Array.isArray(packed) ? packed[0]?.filename : null
+  if (!packedName) {
+    throw new Error('npm pack did not return a tarball filename')
+  }
 
   const tarball = join(repoRoot, packedName)
   const probeDir = join(sandbox, 'probe')
