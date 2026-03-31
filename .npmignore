@@ -1,0 +1,35 @@
+# Development files
+test/
+.github/
+*.test.js
+*.spec.js
+.eslintrc.js
+.prettierrc
+.editorconfig
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+
+# Internal documentation (not for distribution)
+SECURITY_REVIEW.md
+IMPLEMENTATION_SUMMARY.md
+
+# Git files
+.gitignore
+.git/

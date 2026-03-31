@@ -1,0 +1,63 @@
+{
+  "name": "opencode-container-exec",
+  "version": "1.0.0",
+  "description": "OpenCode plugin for WSL devcontainer integration - run commands inside devcontainers from WSL",
+  "type": "module",
+  "main": "plugin/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opencode-ai/opencode-container-exec.git"
+  },
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "files": [
+    "plugin/",
+    "scripts/",
+    "README.md",
+    "LICENSE",
+    "CODE_OF_CONDUCT.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
+  ],
+  "keywords": [
+    "devcontainer",
+    "wsl",
+    "docker",
+    "opencode",
+    "plugin",
+    "container",
+    "development",
+    "vscode",
+    "wsl2",
+    "docker-container"
+  ],
+  "author": "OpenCode AI",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.3.3"
+  },
+  "scripts": {
+    "test": "node --test test/unit/*.test.js",
+    "test:watch": "node --test --watch test/unit/*.test.js",
+    "lint": "node --check plugin/index.js && node --check plugin/internal.js && bash -n scripts/toggle.sh",
+    "security": "npm audit",
+    "smoke:pack": "node test/smoke/pack-smoke.mjs",
+    "prepublishOnly": "npm run lint && npm test && npm run smoke:pack"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "bugs": {
+    "url": "https://github.com/opencode-ai/opencode-container-exec/issues"
+  },
+  "homepage": "https://github.com/opencode-ai/opencode-container-exec#readme"
+}
