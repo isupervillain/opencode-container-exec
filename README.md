@@ -65,14 +65,14 @@ node --version
 ### From npm (recommended)
 
 ```bash
-npm install -g opencode-container-exec
+npm install -g @isupervillain/opencode-container-exec
 ```
 
 Add to your `~/.config/opencode/opencode.json` or project `opencode.json`:
 
 ```json
 {
-  "plugin": ["opencode-container-exec"]
+  "plugin": ["@isupervillain/opencode-container-exec"]
 }
 ```
 
@@ -408,7 +408,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ```bash
 # Clone repository
-git clone https://github.com/opencode-ai/opencode-container-exec.git
+git clone https://github.com/isupervillain/opencode-container-exec.git
 cd opencode-container-exec
 
 # Install dependencies
@@ -445,6 +445,6 @@ MIT © [OpenCode AI](https://opencode.ai)
 ## Support
 
 - **Documentation**: [README.md](README.md)
-- **Issues**: [GitHub Issues](https://github.com/opencode-ai/opencode-container-exec/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/opencode-ai/opencode-container-exec/discussions)
+- **Issues**: [GitHub Issues](https://github.com/isupervillain/opencode-container-exec/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/isupervillain/opencode-container-exec/discussions)
 - **Security**: security@opencode-ai.com

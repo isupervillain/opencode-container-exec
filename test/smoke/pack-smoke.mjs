@@ -25,7 +25,7 @@ try {
   execSync(`npm install --silent "${tarball}"`, { cwd: probeDir, stdio: 'inherit' })
 
   execSync(
-    `node -e "import('opencode-container-exec/plugin/index.js').then(async (m) => { const fn = m.ContainerExecPlugin || m.default; if (typeof fn !== 'function') throw new Error('Plugin export missing'); const hooks = await fn({ project: {}, client: {}, $: () => ({ text: () => Promise.resolve('') }), directory: '/tmp', worktree: '/tmp' }); if (!hooks?.tool?.container || !hooks?.tool?.bash) throw new Error('Plugin hooks missing required tools'); console.log('pack-smoke-ok'); }).catch((err) => { console.error(err); process.exit(1); })"`,
+    `node -e "import('@isupervillain/opencode-container-exec/plugin/index.js').then(async (m) => { const fn = m.ContainerExecPlugin || m.default; if (typeof fn !== 'function') throw new Error('Plugin export missing'); const hooks = await fn({ project: {}, client: {}, $: () => ({ text: () => Promise.resolve('') }), directory: '/tmp', worktree: '/tmp' }); if (!hooks?.tool?.container || !hooks?.tool?.bash) throw new Error('Plugin hooks missing required tools'); console.log('pack-smoke-ok'); }).catch((err) => { console.error(err); process.exit(1); })"`,
     { cwd: probeDir, stdio: 'inherit' }
   )
 
