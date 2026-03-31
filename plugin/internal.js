@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, renameSync, openSync, writeSync, closeSync, chmodSync, lstatSync, realpathSync, mkdtempSync, rmSync, statSync } from "fs"
 import { join, dirname, resolve, relative, isAbsolute } from "path"
-import { execSync } from "child_process"
+import { execSync, execFileSync } from "child_process"
 import { fileURLToPath } from "url"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -185,6 +185,16 @@ function validateWindowsPath(path) {
   return /^[a-zA-Z0-9_\-./\\: ]+$/.test(path)
 }
 
+function getAutoDetectPathCandidates(winPath) {
+  const candidates = [winPath]
+  if (winPath.startsWith('\\\\wsl.localhost\\')) {
+    candidates.push(winPath.replace('\\\\wsl.localhost\\', '\\\\wsl$\\'))
+  } else if (winPath.startsWith('\\\\wsl$\\')) {
+    candidates.push(winPath.replace('\\\\wsl$\\', '\\\\wsl.localhost\\'))
+  }
+  return [...new Set(candidates)]
+}
+
 // State management with secure file operations
 function getState() {
   try {
@@ -359,23 +369,41 @@ function getWindowsPath(dir) {
     logSecurityEvent('invalid_directory_path', { dir })
     return null
   }
-  
-  const distro = process.env.WSL_DISTRO_NAME || "Ubuntu"
-  
-  // Validate distro name
-  if (!/^[a-zA-Z0-9_-]+$/.test(distro)) {
-    logSecurityEvent('invalid_distro_name', { distro })
-    return null
+
+  const envDistro = process.env.WSL_DISTRO_NAME || process.env.WSL_DISTRO
+
+  // Prefer explicit distro environment when provided.
+  let winPath = null
+  if (!envDistro) {
+    // Fall back to wslpath for portability across distro naming variants.
+    try {
+      winPath = execFileSync('wslpath', ['-w', dir], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore']
+      }).trim()
+    } catch {
+      // Fallback for environments without wslpath
+    }
   }
-  
-  const winPath = `\\\\wsl.localhost\\${distro}${dir}`.replace(/\//g, "\\")
-  
+
+  if (!winPath) {
+    const distro = envDistro || 'Ubuntu'
+
+    // Allow common distro naming including dots (e.g. Ubuntu-24.04)
+    if (!/^[a-zA-Z0-9_.-]+$/.test(distro)) {
+      logSecurityEvent('invalid_distro_name', { distro })
+      return null
+    }
+
+    winPath = `\\\\wsl.localhost\\${distro}${dir}`.replace(/\//g, '\\')
+  }
+
   // Validate the resulting path
   if (!validateWindowsPath(winPath)) {
     logSecurityEvent('invalid_windows_path', { winPath })
     return null
   }
-  
+
   return winPath
 }
 
@@ -412,15 +440,19 @@ function findContainer(selection, currentDir) {
       return { error: "Invalid directory path for auto-detection" }
     }
     
-    const autoContainer = runCommand(`docker ps -q --filter "label=devcontainer.local_folder=${winPath}"`)
-      .split("\n")
-      .map(id => id.trim())
-      .filter(Boolean)
+    const autoContainer = getAutoDetectPathCandidates(winPath)
+      .flatMap((candidate) =>
+        runCommand(`docker ps -q --filter "label=devcontainer.local_folder=${candidate}"`)
+          .split("\n")
+          .map(id => id.trim())
+          .filter(Boolean)
+      )
+    const uniqueAutoContainers = [...new Set(autoContainer)]
 
-    if (autoContainer.length === 1) {
-      return { containerId: autoContainer[0] }
+    if (uniqueAutoContainers.length === 1) {
+      return { containerId: uniqueAutoContainers[0] }
     }
-    if (autoContainer.length > 1) {
+    if (uniqueAutoContainers.length > 1) {
       return { error: "Multiple matching containers found for current directory. Use 'list' and select by number." }
     }
     return { error: "No devcontainer found for current directory. Use 'list' to see available containers." }

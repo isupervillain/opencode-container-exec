@@ -201,7 +201,7 @@ toggle.sh [action] [container]
 ## How it works
 
 1. The plugin detects running devcontainers by checking the `devcontainer.local_folder` Docker label
-2. It converts WSL paths to Windows WSL format (`\\wsl.localhost\Ubuntu\...`)
+2. It converts WSL paths to Windows format (prefers `wslpath -w`, falls back to `\\wsl.localhost\<distro>\...`)
 3. When enabled, bash commands are routed through `devcontainer exec --container-id`
 4. State is persisted in `~/.config/opencode/container-mode.json`
 
@@ -212,6 +212,7 @@ toggle.sh [action] [container]
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `WSL_DISTRO_NAME` | WSL distribution name | `Ubuntu` | No |
+| `WSL_DISTRO` | Alternate WSL distribution variable (fallback) | _unset_ | No |
 | `HOME` | User home directory | `~` | No |
 | `NODE_ENV` | Node environment | `production` | No |
 
@@ -283,14 +284,13 @@ Currently, the plugin uses automatic configuration. Future versions will support
    ```bash
    echo $WSL_DISTRO_NAME
    ```
-2. Set distribution name if not Ubuntu:
+2. Set distribution name if not Ubuntu (dot/hyphen names are supported, e.g. `Ubuntu-24.04`):
    ```bash
-   export WSL_DISTRO_NAME="Debian"
+   export WSL_DISTRO_NAME="Ubuntu-24.04"
    ```
 3. Verify path conversion:
    ```bash
-   # Should show Windows-style path
-   echo "\\\\wsl.localhost\\$WSL_DISTRO_NAME$(pwd)"
+   wslpath -w "$(pwd)"
    ```
 
 #### 4. Permission errors

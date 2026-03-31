@@ -34,6 +34,7 @@ describe('Path Operations', () => {
   describe('getWindowsPath()', () => {
     // Save original environment
     const originalEnv = process.env.WSL_DISTRO_NAME;
+    const originalWslDistro = process.env.WSL_DISTRO;
     
     afterEach(() => {
       // Restore environment
@@ -41,6 +42,12 @@ describe('Path Operations', () => {
         process.env.WSL_DISTRO_NAME = originalEnv;
       } else {
         delete process.env.WSL_DISTRO_NAME;
+      }
+
+      if (originalWslDistro) {
+        process.env.WSL_DISTRO = originalWslDistro;
+      } else {
+        delete process.env.WSL_DISTRO;
       }
     });
     
@@ -52,6 +59,19 @@ describe('Path Operations', () => {
     
     it('should convert WSL path to Windows format with custom distro', () => {
       process.env.WSL_DISTRO_NAME = 'Debian';
+      const result = getWindowsPath('/home/user/project');
+      assert.strictEqual(result, '\\\\wsl.localhost\\Debian\\home\\user\\project');
+    });
+
+    it('should accept distro names with dots', () => {
+      process.env.WSL_DISTRO_NAME = 'Ubuntu-24.04';
+      const result = getWindowsPath('/home/user/project');
+      assert.strictEqual(result, '\\\\wsl.localhost\\Ubuntu-24.04\\home\\user\\project');
+    });
+
+    it('should use WSL_DISTRO when WSL_DISTRO_NAME is not set', () => {
+      delete process.env.WSL_DISTRO_NAME;
+      process.env.WSL_DISTRO = 'Debian';
       const result = getWindowsPath('/home/user/project');
       assert.strictEqual(result, '\\\\wsl.localhost\\Debian\\home\\user\\project');
     });
