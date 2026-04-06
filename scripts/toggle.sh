@@ -325,8 +325,19 @@ select_container() {
 
             local id
             while IFS= read -r id; do
-                if [[ -n "$id" ]] && [[ ! " ${auto_containers[*]} " =~ " ${id} " ]]; then
-                    auto_containers+=("$id")
+                if [[ -n "$id" ]]; then
+                    local is_duplicate=false
+                    local existing_id
+                    for existing_id in "${auto_containers[@]}"; do
+                        if [[ "$existing_id" == "$id" ]]; then
+                            is_duplicate=true
+                            break
+                        fi
+                    done
+
+                    if [[ "$is_duplicate" == false ]]; then
+                        auto_containers+=("$id")
+                    fi
                 fi
             done <<< "$auto_container_lines"
         done < <(get_auto_detect_paths "$win_path")
