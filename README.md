@@ -394,11 +394,7 @@ The plugin logs security events in development mode. For production issues:
 
 ### Reporting Vulnerabilities
 
-If you discover a security vulnerability, please report it responsibly:
-
-- **Do not** open a public GitHub issue
-- Email: security@opencode-ai.com
-- Allow time for the issue to be addressed before public disclosure
+If you discover a security vulnerability, please report it responsibly by opening a private [GitHub Security Advisory](https://github.com/isupervillain/opencode-container-exec/security/advisaries/new).
 
 ## Contributing
 
@@ -440,11 +436,11 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## License
 
-MIT © [OpenCode AI](https://opencode.ai)
+MIT © isupervillain
 
 ## Support
 
 - **Documentation**: [README.md](README.md)
 - **Issues**: [GitHub Issues](https://github.com/isupervillain/opencode-container-exec/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/isupervillain/opencode-container-exec/discussions)
-- **Security**: security@opencode-ai.com
+- **Security**: Report via [GitHub Security Advisory](https://github.com/isupervillain/opencode-container-exec/security)
