@@ -201,7 +201,7 @@ toggle.sh [action] [container]
 ## How it works
 
 1. The plugin detects running devcontainers by checking the `devcontainer.local_folder` Docker label
-2. It converts WSL paths to Windows WSL format (`\\wsl.localhost\Ubuntu\...`)
+2. It converts WSL paths to Windows format (prefers `wslpath -w`, falls back to `\\wsl.localhost\<distro>\...`)
 3. When enabled, bash commands are routed through `devcontainer exec --container-id`
 4. State is persisted in `~/.config/opencode/container-mode.json`
 
@@ -212,6 +212,7 @@ toggle.sh [action] [container]
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `WSL_DISTRO_NAME` | WSL distribution name | `Ubuntu` | No |
+| `WSL_DISTRO` | Alternate WSL distribution variable (fallback) | _unset_ | No |
 | `HOME` | User home directory | `~` | No |
 | `NODE_ENV` | Node environment | `production` | No |
 
@@ -283,14 +284,13 @@ Currently, the plugin uses automatic configuration. Future versions will support
    ```bash
    echo $WSL_DISTRO_NAME
    ```
-2. Set distribution name if not Ubuntu:
+2. Set distribution name if not Ubuntu (dot/hyphen names are supported, e.g. `Ubuntu-24.04`):
    ```bash
-   export WSL_DISTRO_NAME="Debian"
+   export WSL_DISTRO_NAME="Ubuntu-24.04"
    ```
 3. Verify path conversion:
    ```bash
-   # Should show Windows-style path
-   echo "\\\\wsl.localhost\\$WSL_DISTRO_NAME$(pwd)"
+   wslpath -w "$(pwd)"
    ```
 
 #### 4. Permission errors
@@ -394,11 +394,7 @@ The plugin logs security events in development mode. For production issues:
 
 ### Reporting Vulnerabilities
 
-If you discover a security vulnerability, please report it responsibly:
-
-- **Do not** open a public GitHub issue
-- Email: security@opencode-ai.com
-- Allow time for the issue to be addressed before public disclosure
+If you discover a security vulnerability, please report it responsibly by opening a private [GitHub Security Advisory](https://github.com/isupervillain/opencode-container-exec/security/advisaries/new).
 
 ## Contributing
 
@@ -440,11 +436,11 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## License
 
-MIT © [OpenCode AI](https://opencode.ai)
+MIT © isupervillain
 
 ## Support
 
 - **Documentation**: [README.md](README.md)
 - **Issues**: [GitHub Issues](https://github.com/isupervillain/opencode-container-exec/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/isupervillain/opencode-container-exec/discussions)
-- **Security**: security@opencode-ai.com
+- **Security**: Report via [GitHub Security Advisory](https://github.com/isupervillain/opencode-container-exec/security)

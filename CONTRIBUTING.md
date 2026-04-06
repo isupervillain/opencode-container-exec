@@ -156,7 +156,7 @@ Aim for high test coverage, especially for:
 If you discover a security vulnerability, please report it responsibly:
 
 1. **Do not** open a public GitHub issue
-2. Email security concerns to: security@opencode-ai.com
+2. Report via [GitHub Security Advisory](https://github.com/isupervillain/opencode-container-exec/security)
 3. Allow time for the issue to be addressed before public disclosure
 
 ### Security Review
@@ -257,7 +257,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 - **Issues**: Use GitHub issues for bugs and feature requests
 - **Discussions**: Use GitHub Discussions for questions
-- **Security**: Email security@opencode-ai.com for vulnerabilities
+- **Security**: Report via [GitHub Security Advisory](https://github.com/isupervillain/opencode-container-exec/security)
 
 ## License
 

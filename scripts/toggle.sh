@@ -148,16 +148,26 @@ get_windows_path() {
         return 1
     fi
     
-    local distro="${WSL_DISTRO_NAME:-Ubuntu}"
-    
-    # Validate distro name
-    if [[ ! "$distro" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        log_security "invalid_distro_name" "distro=$distro"
-        return 1
+    local win_path=""
+
+    local env_distro="${WSL_DISTRO_NAME:-${WSL_DISTRO:-}}"
+
+    # Prefer explicit distro environment when provided.
+    if [[ -z "$env_distro" ]] && command -v wslpath &> /dev/null; then
+        win_path=$(wslpath -w "$dir" 2>/dev/null || true)
     fi
-    
-    local win_path
-    win_path=$(printf '\\\\wsl.localhost\\%s%s' "$distro" "$dir" | sed 's|/|\\|g')
+
+    if [[ -z "$win_path" ]]; then
+        local distro="${env_distro:-Ubuntu}"
+
+        # Allow common distro naming including dots (e.g. Ubuntu-24.04)
+        if [[ ! "$distro" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
+            log_security "invalid_distro_name" "distro=$distro"
+            return 1
+        fi
+
+        win_path=$(printf '\\\\wsl.localhost\\%s%s' "$distro" "$dir" | sed 's|/|\\|g')
+    fi
     
     # Validate the resulting path
     if ! validate_windows_path "$win_path"; then
@@ -167,6 +177,17 @@ get_windows_path() {
     
     echo "$win_path"
     return 0
+}
+
+get_auto_detect_paths() {
+    local base_path="$1"
+    printf '%s\n' "$base_path"
+
+    if [[ "$base_path" == \\\\wsl.localhost\\* ]]; then
+        printf '%s\n' "${base_path/\\\\wsl.localhost\\/\\\\wsl$\\}"
+    elif [[ "$base_path" == \\\\wsl$\\* ]]; then
+        printf '%s\n' "${base_path/\\\\wsl$\\/\\\\wsl.localhost\\}"
+    fi
 }
 
 # Create config dir if not exists with proper permissions
@@ -292,16 +313,23 @@ select_container() {
             return 1
         }
         
-        local auto_container_lines
-        # Use proper quoting to prevent injection
-        if ! auto_container_lines=$(docker ps -q --filter "label=devcontainer.local_folder=$win_path" 2>&1); then
-            echo "❌ Failed to auto-detect container: $auto_container_lines"
-            return 1
-        fi
         local auto_containers=()
-        while IFS= read -r id; do
-            [ -n "$id" ] && auto_containers+=("$id")
-        done <<< "$auto_container_lines"
+        local candidate
+        while IFS= read -r candidate; do
+            local auto_container_lines
+            # Use proper quoting to prevent injection
+            if ! auto_container_lines=$(docker ps -q --filter "label=devcontainer.local_folder=$candidate" 2>&1); then
+                echo "❌ Failed to auto-detect container: $auto_container_lines"
+                return 1
+            fi
+
+            local id
+            while IFS= read -r id; do
+                if [[ -n "$id" ]] && [[ ! " ${auto_containers[*]} " =~ " ${id} " ]]; then
+                    auto_containers+=("$id")
+                fi
+            done <<< "$auto_container_lines"
+        done < <(get_auto_detect_paths "$win_path")
 
         if [ ${#auto_containers[@]} -eq 1 ]; then
             # Validate the returned container ID
