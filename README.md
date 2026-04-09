@@ -64,9 +64,19 @@ node --version
 
 ### From npm (recommended)
 
+The plugin intelligently installs commands to the appropriate location based on how it's installed:
+
+#### Global Installation (recommended for system-wide use)
 ```bash
 npm install -g @isupervillain/opencode-container-exec
 ```
+Installs commands to: `~/.config/opencode/commands/container.md`
+
+#### Local/Project Installation (recommended for project-specific use)
+```bash
+npm install @isupervillain/opencode-container-exec
+```
+Installs commands to: `./commands/container.md` (relative to project root)
 
 Add to your `~/.config/opencode/opencode.json` or project `opencode.json`:
 
@@ -76,16 +86,21 @@ Add to your `~/.config/opencode/opencode.json` or project `opencode.json`:
 }
 ```
 
-### Local installation
+### Manual installation
 
 1. Clone this repository
 2. Copy the `plugin` directory to `~/.config/opencode/plugins/` or `.opencode/plugins/`
 3. Copy `scripts/toggle.sh` to a location in your PATH
 
-**Note**: The `/container` slash command is automatically installed when the plugin loads (global OpenCode config). No manual setup required.
+**Note**: The `/container` slash command is automatically installed when the plugin loads. The installation location depends on how the plugin was installed:
+- **Global npm install**: `~/.config/opencode/commands/container.md`
+- **Local npm install**: `./commands/container.md` (project-relative)
+- **Manual copy**: Choose either location based on your preference
 
 If you don't see `/container` immediately, restart OpenCode once so the command file can be discovered.
-If auto-install fails in your environment, you can still manually copy `plugin/command/container.md` to `~/.config/opencode/commands/container.md`.
+If auto-install fails in your environment, you can manually copy `plugin/command/container.md` to:
+- `~/.config/opencode/commands/container.md` (for global availability)
+- `./commands/container.md` (for project-specific use)
 
 ### Plugin runtime entrypoint contract
 
@@ -215,6 +230,7 @@ toggle.sh [action] [container]
 | `WSL_DISTRO` | Alternate WSL distribution variable (fallback) | _unset_ | No |
 | `HOME` | User home directory | `~` | No |
 | `NODE_ENV` | Node environment | `production` | No |
+| `OPENCODE_PLUGIN_GLOBAL_INSTALL` | Force global installation behavior (for testing) | _unset_ | No |
 
 ### State File
 

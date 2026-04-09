@@ -8,7 +8,7 @@ const TEST_ROOT = '/tmp/opencode-container-exec-test';
 const CONFIG_DIR = join(TEST_ROOT, 'home', '.config', 'opencode');
 
 describe('Command auto-install', () => {
-  it('installs command file into commands and command directories', async () => {
+  it('installs command file into appropriate directory based on installation type', async () => {
     rmSync(TEST_ROOT, { recursive: true, force: true });
     mkdirSync(CONFIG_DIR, { recursive: true });
 
@@ -21,16 +21,22 @@ describe('Command auto-install', () => {
       }
     };
 
-    await installCommands(client);
+    // Set environment variable to simulate global installation for testing
+    process.env.OPENCODE_PLUGIN_GLOBAL_INSTALL = 'true';
 
+    await installCommands({ client, directory: '/tmp/test-project' });
+
+    // For global installation, should install to commands/ directory only
     assert.ok(existsSync(join(CONFIG_DIR, 'commands', 'container.md')));
-    assert.ok(existsSync(join(CONFIG_DIR, 'command', 'container.md')));
+    assert.ok(!existsSync(join(CONFIG_DIR, 'command', 'container.md')));
 
     if (originalHome === undefined) {
       delete process.env.HOME;
     } else {
       process.env.HOME = originalHome;
     }
+    // Clean up test environment variable
+    delete process.env.OPENCODE_PLUGIN_GLOBAL_INSTALL;
   });
 
   it('does not overwrite existing command file', async () => {

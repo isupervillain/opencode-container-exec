@@ -62,76 +62,103 @@ function logSecurityEvent(event, details) {
 }
 
 // Auto-install command files on plugin load
-async function installCommands(client) {
+async function installCommands({ client, directory }) {
   try {
-    if (!client?.path?.get) return
+    // eslint-disable-next-line no-console
+    console.log('[PLUGIN] installCommands called');
+    // eslint-disable-next-line no-console
+    console.log('[PLUGIN] client.path.get exists:', typeof client?.path?.get === 'function');
+
+    if (!client?.path?.get) {
+      // eslint-disable-next-line no-console
+      console.log('[PLUGIN] Early return: client.path.get missing');
+      return
+    }
 
     const paths = await client.path.get()
+    // eslint-disable-next-line no-console
+    console.log('[PLUGIN] paths from client.path.get():', paths);
     const configDir = paths.data?.config
-    if (!configDir || typeof configDir !== "string") return
-
-    // Restrict writes to user config root using canonical boundary checks
-    const expectedBase = resolve(process.env.HOME || "", ".config", "opencode")
-    if (!existsSync(expectedBase)) {
-      mkdirSync(expectedBase, { recursive: true, mode: 0o700 })
+    // eslint-disable-next-line no-console
+    console.log('[PLUGIN] configDir:', configDir);
+    if (!configDir || typeof configDir !== "string") {
+      // eslint-disable-next-line no-console
+      console.log('[PLUGIN] Early return: invalid configDir');
+      return
     }
 
-    // Reject symlinked config root paths
-    if (existsSync(configDir)) {
-      const configStat = lstatSync(configDir)
-      if (configStat.isSymbolicLink()) return
-    }
+    // Determine if plugin is installed globally or locally
+    let isGlobalInstall = false;
+    try {
+      // Try to determine if we're in a global npm installation
+      const { execSync } = require('child_process');
+      const npmPrefix = execSync('npm config get prefix', { encoding: 'utf8' }).trim();
+      const pluginDir = dirname(fileURLToPath(import.meta.url));
 
-    const canonicalBase = realpathSync(expectedBase)
-    const canonicalConfig = existsSync(configDir) ? realpathSync(configDir) : resolve(configDir)
-    const rel = relative(canonicalBase, canonicalConfig)
-    if (rel.startsWith("..")) return
-
-    // Reject symlinked path segments under the trusted base (prevents symlink ancestor escapes)
-    const relSegments = relative(canonicalBase, resolve(configDir)).split("/").filter(Boolean)
-    let walk = canonicalBase
-    for (const seg of relSegments) {
-      walk = join(walk, seg)
-      if (existsSync(walk)) {
-        const st = lstatSync(walk)
-        if (st.isSymbolicLink()) return
+      // In test environments, we might need to override detection
+      // Check if we're explicitly told to behave as global installation
+      const forceGlobal = process.env.OPENCODE_PLUGIN_GLOBAL_INSTALL === 'true';
+      if (forceGlobal) {
+        isGlobalInstall = true;
+      } else {
+        isGlobalInstall = pluginDir.startsWith(npmPrefix);
+      }
+    } catch (e) {
+      // Fallback: check if we're in node_modules directory
+      const pluginDir = dirname(fileURLToPath(import.meta.url));
+      // In test environments, also check for test-specific overrides
+      const forceGlobal = process.env.OPENCODE_PLUGIN_GLOBAL_INSTALL === 'true';
+      if (forceGlobal) {
+        isGlobalInstall = true;
+      } else {
+        isGlobalInstall = !pluginDir.includes('node_modules');
       }
     }
 
-    // OpenCode docs use `commands/`, while some plugins historically used `command/`.
-    // Install into both for maximum compatibility across versions.
-    const commandDirs = [join(configDir, "commands"), join(configDir, "command")]
+    let targetCommandsDir;
+    if (isGlobalInstall) {
+      // Global installation: use user's opencode config directory
+      targetCommandsDir = join(configDir, "commands");
+    } else {
+      // Local/project installation: use project's commands directory
+      targetCommandsDir = join(directory || process.cwd(), "commands");
+    }
+
+    // Create commands directory if it doesn't exist
+    if (!existsSync(targetCommandsDir)) {
+      mkdirSync(targetCommandsDir, { recursive: true, mode: 0o700 })
+    }
+
+    // Reject symlinked target commands directory
+    if (existsSync(targetCommandsDir)) {
+      const dirStat = lstatSync(targetCommandsDir)
+      if (dirStat.isSymbolicLink()) {
+        logSecurityEvent("symlinked_commands_directory_rejected", { path: targetCommandsDir })
+        return
+      }
+    }
 
     const sourceFile = join(__dirname, "command", "container.md")
     if (!existsSync(sourceFile)) return
 
-    for (const commandDir of commandDirs) {
-      mkdirSync(commandDir, { recursive: true, mode: 0o700 })
+    const destFile = join(targetCommandsDir, "container.md")
 
-      // Do not follow symlinked command directories
-      const dirStat = lstatSync(commandDir)
-      if (dirStat.isSymbolicLink() || !dirStat.isDirectory()) continue
-
-      const canonicalCommandDir = realpathSync(commandDir)
-      const relCommand = relative(canonicalBase, canonicalCommandDir)
-      if (relCommand.startsWith("..")) continue
-
-      const destFile = join(commandDir, "container.md")
-
-      // Avoid overwriting user-customized command file
-      if (!existsSync(destFile)) {
-        // Write using temp file + atomic rename
-        const tempFile = `${destFile}.${process.pid}.${Date.now()}.tmp`
-        const source = readFileSync(sourceFile, "utf8")
-        const fd = openSync(tempFile, "wx", 0o600)
-        writeSync(fd, source)
-        closeSync(fd)
-        chmodSync(tempFile, 0o600)
-        renameSync(tempFile, destFile)
-      } else {
-        // Existing symlinked destination is unsafe; skip writing
-        const existingStat = lstatSync(destFile)
-        if (existingStat.isSymbolicLink()) continue
+    // Avoid overwriting user-customized command file
+    if (!existsSync(destFile)) {
+      // Write using temp file + atomic rename
+      const tempFile = `${destFile}.${process.pid}.${Date.now()}.tmp`
+      const source = readFileSync(sourceFile, "utf8")
+      const fd = openSync(tempFile, "wx", 0o600)
+      writeSync(fd, source)
+      closeSync(fd)
+      chmodSync(tempFile, 0o600)
+      renameSync(tempFile, destFile)
+    } else {
+      // Existing symlinked destination is unsafe; skip writing
+      const existingStat = lstatSync(destFile)
+      if (existingStat.isSymbolicLink()) {
+        logSecurityEvent("symlinked_destination_skipped", { path: destFile })
+        return
       }
     }
   } catch (error) {

@@ -16,7 +16,7 @@ import {
 // Main plugin export
 export const ContainerExecPlugin = async ({ project, client, $, directory, worktree }) => {
   // Install commands on load (non-blocking)
-  setTimeout(() => installCommands(client), 0)
+  setTimeout(() => installCommands({ client, directory }), 0)
   
   // Check dependencies on plugin load
   const missingDeps = checkDependencies()
